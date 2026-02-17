@@ -2,8 +2,6 @@
 
 A community-driven web application to help people find mosques offering takjil (iftar meals) during Ramadan. Built with React, TypeScript, and modern web technologies.
 
-![TakjilFinder Banner](https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6)
-
 ## ✨ Features
 
 - **Interactive Map View**: Browse verified mosques on an interactive map interface
