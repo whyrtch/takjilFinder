@@ -22,8 +22,14 @@ const AdminPending: React.FC = () => {
             </div>
           </div>
           <button 
-            onClick={logout}
-            className="size-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/5 text-slate-400"
+            onClick={async () => {
+              try {
+                await logout();
+              } catch (error) {
+                console.error('Logout error:', error);
+              }
+            }}
+            className="size-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
           >
             <span className="material-symbols-outlined">logout</span>
           </button>

@@ -7,14 +7,26 @@ const AdminPortal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const adminEmail = import.meta.env.VITE_ADMIN_ACCOUNT;
   const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();    
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
     if (email === adminEmail && password === adminPassword) {
-      login(email);
+      setLoading(true);
+      try {
+        await login(email);
+        // Navigation will happen automatically via App.tsx when user state changes
+      } catch (err) {
+        setError('Failed to authenticate. Please try again.');
+        console.error('Login error:', err);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setError('Invalid credentials.');
     }
@@ -70,10 +82,20 @@ const AdminPortal: React.FC = () => {
 
             <button 
               type="submit"
-              className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login as Admin
-              <span className="material-symbols-outlined text-xl">login</span>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  Login as Admin
+                  <span className="material-symbols-outlined text-xl">login</span>
+                </>
+              )}
             </button>
           </form>
 
