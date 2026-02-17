@@ -62,7 +62,7 @@ const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
 
 const HomeMap: React.FC = () => {
   const navigate = useNavigate();
-  const { mosques } = useApp();
+  const { mosques, loading } = useApp();
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-6.2088, 106.8456]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);

@@ -6,7 +6,7 @@ import { MosqueStatus } from '../types';
 
 const ListView: React.FC = () => {
   const navigate = useNavigate();
-  const { mosques } = useApp();
+  const { mosques, loading } = useApp();
   const [filterVerified, setFilterVerified] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -15,6 +15,15 @@ const ListView: React.FC = () => {
     const matchesFilter = filterVerified ? m.status === MosqueStatus.VERIFIED : true;
     return matchesSearch && matchesFilter;
   });
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p className="text-slate-500 text-sm">Loading mosques...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -84,8 +93,17 @@ const ListView: React.FC = () => {
         ))}
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="material-symbols-outlined text-6xl mb-4 opacity-20">search_off</span>
-            <p className="text-sm font-medium">No results found</p>
+            <span className="material-symbols-outlined text-6xl mb-4 opacity-20">
+              {mosques.length === 0 ? 'mosque' : 'search_off'}
+            </span>
+            <p className="text-sm font-medium">
+              {mosques.length === 0 ? 'No mosques yet' : 'No results found'}
+            </p>
+            {mosques.length === 0 && (
+              <p className="text-xs mt-2 text-center max-w-xs">
+                Be the first to add a mosque! Click the + button below to submit one.
+              </p>
+            )}
           </div>
         )}
       </main>

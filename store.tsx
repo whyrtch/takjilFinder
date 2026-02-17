@@ -84,10 +84,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     // Subscribe to Firestore mosques collection only after auth is ready
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      console.log('Waiting for authentication...');
+      return;
+    }
 
+    console.log('Auth ready, subscribing to Firestore...');
     const q = query(collection(db, 'mosques'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log(`Received ${snapshot.size} mosques from Firestore`);
       const mosquesData: Mosque[] = [];
       snapshot.forEach((doc) => {
         mosquesData.push({ id: doc.id, ...doc.data() } as Mosque);
@@ -96,6 +101,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLoading(false);
     }, (error) => {
       console.error('Error fetching mosques:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       setLoading(false);
     });
 
