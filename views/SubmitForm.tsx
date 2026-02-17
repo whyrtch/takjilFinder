@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -36,6 +36,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ position, onLocationCha
   return <Marker position={position} icon={pickerIcon} />;
 };
 
+// Component to update map center
+const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+};
+
 const SubmitForm: React.FC = () => {
   const navigate = useNavigate();
   const { addMosque } = useApp();
@@ -50,6 +59,34 @@ const SubmitForm: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [location, setLocation] = useState<[number, number]>([-6.2088, 106.8456]); // Default Jakarta
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearchAddress = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+      alert('Failed to search address. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (result: any) => {
+    setLocation([parseFloat(result.lat), parseFloat(result.lon)]);
+    setAddress(result.display_name);
+    setSearchResults([]);
+    setSearchQuery('');
+  };
 
   const handleLocationChange = (lat: number, lng: number) => {
     setLocation([lat, lng]);
@@ -172,6 +209,43 @@ const SubmitForm: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
+                  {/* Address Search */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchAddress())}
+                        placeholder="Search address..."
+                        className="flex-1 bg-slate-100 dark:bg-white/5 border-none rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-primary/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSearchAddress}
+                        disabled={isSearching}
+                        className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
+                      >
+                        {isSearching ? '...' : 'Search'}
+                      </button>
+                    </div>
+                    
+                    {searchResults.length > 0 && (
+                      <div className="bg-white dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 max-h-32 overflow-y-auto">
+                        {searchResults.map((result, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSearchResult(result)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-white/5 border-b border-slate-100 dark:border-white/5 last:border-b-0"
+                          >
+                            {result.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="relative rounded-xl overflow-hidden border-2 border-primary" style={{ height: '256px' }}>
                     <MapContainer
                       center={location}
@@ -183,6 +257,7 @@ const SubmitForm: React.FC = () => {
                         attribution=''
                         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
                       />
+                      <MapUpdater center={location} />
                       <LocationPicker position={location} onLocationChange={handleLocationChange} />
                     </MapContainer>
                   </div>

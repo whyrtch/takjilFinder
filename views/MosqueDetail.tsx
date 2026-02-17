@@ -187,7 +187,7 @@ const MosqueDetail: React.FC = () => {
             <MapContainer
               center={[mosque.location.lat, mosque.location.lng]}
               zoom={15}
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', zIndex: 20 }}
               zoomControl={false}
               dragging={false}
               scrollWheelZoom={false}
@@ -222,7 +222,7 @@ const MosqueDetail: React.FC = () => {
       </main>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-background-dark/80 ios-blur border-t border-slate-100 dark:border-white/5 max-w-md mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-background-dark/80 ios-blur border-t border-slate-100 dark:border-white/5 max-w-md mx-auto z-50">
         <button 
           onClick={() => {
             const url = `https://www.google.com/maps/dir/?api=1&destination=${mosque.location.lat},${mosque.location.lng}`;

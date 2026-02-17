@@ -43,7 +43,7 @@ const AboutPage: React.FC = () => {
           />
           <div className="absolute bottom-6 left-6 right-6 z-20">
             <h2 className="text-3xl font-extrabold text-primary mb-1">Connecting Hearts</h2>
-            <p className="text-sm font-bold opacity-60 uppercase tracking-[0.2em]">Ramadan 1445 H</p>
+            <p className="text-sm font-bold opacity-60 uppercase tracking-[0.2em]">Ramadan 1447 H</p>
           </div>
         </div>
 
@@ -107,7 +107,12 @@ const AboutPage: React.FC = () => {
                 </div>
                 <span className="material-symbols-outlined text-slate-300">chevron_right</span>
               </a>
-              <a href="#" className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary/30 transition-colors">
+              <a 
+                href="https://takjil-finder-website.vercel.app/" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary/30 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-primary">language</span>
                   <span className="text-sm font-semibold">Official Website</span>
@@ -128,9 +133,6 @@ const AboutPage: React.FC = () => {
                   Link copied!
                 </div>
               )}
-              <button className="size-12 rounded-full bg-[#1da1f2] flex items-center justify-center text-white shadow-lg shadow-blue-400/20 active:scale-90 transition-transform">
-                <span className="material-symbols-outlined">public</span>
-              </button>
             </div>
 
             <div className="pt-10 flex flex-col items-center opacity-40">

@@ -38,10 +38,52 @@ const selectedMosqueIcon = new L.DivIcon({
   popupAnchor: [0, -40]
 });
 
+// User location marker icon
+const userLocationIcon = new L.DivIcon({
+  className: 'custom-marker',
+  html: `
+    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 20px; height: 20px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3); border: 3px solid white;">
+      </div>
+    </div>
+  `,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+
+// Component to update map center
+const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    map.setView(center, 15);
+  }, [center, map]);
+  return null;
+};
+
 const HomeMap: React.FC = () => {
   const navigate = useNavigate();
   const { mosques } = useApp();
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-6.2088, 106.8456]);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  const handleMyLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newCenter: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setMapCenter(newCenter);
+          setUserLocation(newCenter);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          alert('Could not get your location. Please enable location services.');
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+    }
+  };
 
   const verifiedMosques = mosques.filter(m => m.status === MosqueStatus.VERIFIED);
 
@@ -51,7 +93,7 @@ const HomeMap: React.FC = () => {
   return (
     <div className="relative h-full w-full overflow-hidden">
       <MapContainer
-        center={defaultCenter}
+        center={mapCenter}
         zoom={12}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
@@ -60,6 +102,15 @@ const HomeMap: React.FC = () => {
           attribution=''
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
         />
+        <MapUpdater center={mapCenter} />
+        
+        {/* User location marker */}
+        {userLocation && (
+          <Marker
+            position={userLocation}
+            icon={userLocationIcon}
+          />
+        )}
         
         {/* Markers for verified mosques */}
         {verifiedMosques.map(mosque => (
@@ -76,14 +127,20 @@ const HomeMap: React.FC = () => {
 
       {/* Top Search Bar Overlay */}
       <div className="absolute top-6 left-0 right-0 px-4 z-[1000] pointer-events-none">
-        <div className="pointer-events-auto">
+        <div className="flex gap-3 pointer-events-auto">
           <div 
             onClick={() => navigate('/list')}
-            className="bg-white dark:bg-background-dark shadow-xl rounded-2xl flex items-center px-4 py-3 border border-slate-100 dark:border-white/10 cursor-pointer hover:border-primary/30 transition-colors"
+            className="flex-1 bg-white dark:bg-background-dark shadow-xl rounded-2xl flex items-center px-4 py-3 border border-slate-100 dark:border-white/10 cursor-pointer hover:border-primary/30 transition-colors"
           >
             <span className="material-symbols-outlined text-slate-400 mr-2">search</span>
             <span className="text-sm text-slate-400">Find nearby mosques...</span>
           </div>
+          <button
+            onClick={handleMyLocation}
+            className="bg-white dark:bg-background-dark p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
+          >
+            <span className="material-symbols-outlined">my_location</span>
+          </button>
         </div>
       </div>
 
