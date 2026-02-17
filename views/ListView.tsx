@@ -14,8 +14,10 @@ const ListView: React.FC = () => {
     // Don't show rejected mosques
     if (m.status === MosqueStatus.REJECTED) return false;
     
-    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filterVerified ? m.status === MosqueStatus.VERIFIED : true;
+    // Handle undefined or null name
+    const mosqueName = m?.name || '';
+    const matchesSearch = mosqueName?.toLowerCase()?.includes(search.toLowerCase());
+    const matchesFilter = filterVerified ? m?.status === MosqueStatus.VERIFIED : true;
     return matchesSearch && matchesFilter;
   });
 
