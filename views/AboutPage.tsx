@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import packageJson from '../package.json';
 
 const AboutPage: React.FC = () => {
   const [showCopied, setShowCopied] = useState(false);
@@ -134,7 +135,7 @@ const AboutPage: React.FC = () => {
 
             <div className="pt-10 flex flex-col items-center opacity-40">
               <p className="text-[10px] font-bold uppercase tracking-widest text-center">
-                Version 2.4.0 • Made with ❤️ for the Ummah
+                Version {packageJson.version} • Made with ❤️ for the Ummah
               </p>
             </div>
           </section>
