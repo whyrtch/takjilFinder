@@ -41,23 +41,22 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
+VITE_ADMIN_ACCOUNT=admin@takjilfinder.com
+VITE_ADMIN_PASSWORD=admin12345
 ```
 
-4. Enable Anonymous Authentication in your Firebase Console:
-   - Go to Authentication > Sign-in method
-   - Enable "Anonymous" provider
-
-5. Create a Firestore database:
-   - Go to Firestore Database
-   - Create database in production mode (or test mode for development)
+4. Create a Firestore database:
+   - Go to Firestore Database in Firebase Console
+   - Create database in production mode
    - Create a collection named `mosques`
+   - Set up security rules (see `FIRESTORE_RULES.md`)
 
-6. Start the development server:
+5. Start the development server:
 ```bash
 npm run dev
 ```
 
-7. Open your browser and navigate to `http://localhost:3000`
+6. Open your browser and navigate to `http://localhost:3000`
 
 ## 🚀 Deploying to Vercel
 
@@ -106,9 +105,10 @@ Admin credentials are configured via environment variables:
 
 Uses Firebase Firestore for real-time data persistence:
 - **Collection**: `mosques` - stores all mosque submissions
-- **Authentication**: Anonymous sign-in for all users
+- **Public Access**: No authentication required for viewing and submitting
 - **Real-time updates**: Automatic sync when data changes
 - **Status tracking**: pending/verified/rejected workflow
+- **Admin Controls**: Only admins can update/delete mosques
 
 ## 🎨 Design Features
 

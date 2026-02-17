@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
+import { MosqueStatus } from '../types';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -54,7 +55,8 @@ const MosqueDetail: React.FC = () => {
     }
   };
 
-  if (!mosque) {
+  // Show not found if mosque doesn't exist or is rejected
+  if (!mosque || mosque.status === MosqueStatus.REJECTED) {
     return (
       <div className="flex flex-col items-center justify-center h-screen px-8 text-center">
         <span className="material-symbols-outlined text-slate-300 text-6xl mb-4">mosque</span>

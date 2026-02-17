@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Mosque, MosqueStatus, User } from './types';
 import { db, auth } from './firebase';
 import { collection, addDoc, onSnapshot, query, updateDoc, doc } from 'firebase/firestore';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { signInAnonymously, signOut } from 'firebase/auth';
 
 // Mock Data
 const INITIAL_MOSQUES: Mosque[] = [
@@ -63,66 +63,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Missing'
     });
 
-    // Set a safety timeout to prevent infinite loading
-    const safetyTimeout = setTimeout(() => {
-      console.error('Authentication timeout - forcing ready state');
-      setAuthReady(true);
-      setLoading(false);
-    }, 5000);
-
-    // Sign in anonymously
-    const initAuth = async () => {
-      try {
-        console.log('Starting anonymous authentication...');
-        const result = await signInAnonymously(auth);
-        console.log('Anonymous authentication successful', result.user.uid);
-        clearTimeout(safetyTimeout);
-        setAuthReady(true);
-      } catch (error) {
-        console.error('Error signing in anonymously:', error);
-        clearTimeout(safetyTimeout);
-        setLoading(false);
-        setAuthReady(true); // Set ready even on error to show UI
-      }
-    };
-
-    // Listen to auth state changes first
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}` : 'No user');
-      if (firebaseUser) {
-        clearTimeout(safetyTimeout);
-        setAuthReady(true);
-        // Check if admin user exists in localStorage
-        const savedUser = localStorage.getItem('tf_user');
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        }
-      } else {
-        // Try to sign in if no user
-        initAuth();
-      }
-    });
-
-    return () => {
-      clearTimeout(safetyTimeout);
-      unsubscribeAuth();
-    };
+    // Since Firestore rules allow public read, we can skip authentication
+    // Just check if admin user exists in localStorage
+    const savedUser = localStorage.getItem('tf_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    
+    // Set auth as ready immediately since we don't need it for reading
+    setAuthReady(true);
+    console.log('Auth not required for public read access');
   }, []);
 
   useEffect(() => {
-    // Subscribe to Firestore mosques collection only after auth is ready
+    // Subscribe to Firestore mosques collection
+    // No authentication required since rules allow public read
     if (!authReady) {
-      console.log('Waiting for authentication to be ready...');
+      console.log('Waiting for initialization...');
       return;
     }
 
-    if (!auth.currentUser) {
-      console.log('No current user, stopping loading');
-      setLoading(false);
-      return;
-    }
-
-    console.log('Auth ready, subscribing to Firestore...');
+    console.log('Subscribing to Firestore...');
     
     // Set a timeout to stop loading if Firestore doesn't respond
     const timeoutId = setTimeout(() => {
@@ -179,15 +140,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  const login = useCallback((email: string) => {
-    const newUser: User = { uid: 'admin_1', email, role: 'admin' };
-    setUser(newUser);
-    localStorage.setItem('tf_user', JSON.stringify(newUser));
+  const login = useCallback(async (email: string) => {
+    try {
+      // Sign in anonymously to Firebase when admin logs in
+      console.log('Admin login: signing in anonymously to Firebase...');
+      await signInAnonymously(auth);
+      console.log('Anonymous authentication successful for admin');
+      
+      const newUser: User = { uid: 'admin_1', email, role: 'admin' };
+      setUser(newUser);
+      localStorage.setItem('tf_user', JSON.stringify(newUser));
+    } catch (error) {
+      console.error('Error during admin login:', error);
+      throw error;
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem('tf_user');
+  const logout = useCallback(async () => {
+    try {
+      // Sign out from Firebase when admin logs out
+      console.log('Admin logout: signing out from Firebase...');
+      await signOut(auth);
+      console.log('Firebase sign out successful');
+      
+      setUser(null);
+      localStorage.removeItem('tf_user');
+    } catch (error) {
+      console.error('Error during admin logout:', error);
+      // Still clear local state even if Firebase signout fails
+      setUser(null);
+      localStorage.removeItem('tf_user');
+    }
   }, []);
 
   return (

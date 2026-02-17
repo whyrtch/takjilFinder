@@ -11,6 +11,9 @@ const ListView: React.FC = () => {
   const [search, setSearch] = useState('');
 
   const filtered = mosques.filter(m => {
+    // Don't show rejected mosques
+    if (m.status === MosqueStatus.REJECTED) return false;
+    
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filterVerified ? m.status === MosqueStatus.VERIFIED : true;
     return matchesSearch && matchesFilter;
