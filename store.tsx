@@ -55,43 +55,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    console.log('Firebase config check:', {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? 'Set' : 'Missing',
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'Missing'
+    });
+
+    // Set a safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      console.error('Authentication timeout - forcing ready state');
+      setAuthReady(true);
+      setLoading(false);
+    }, 5000);
+
     // Sign in anonymously
     const initAuth = async () => {
       try {
-        await signInAnonymously(auth);
+        console.log('Starting anonymous authentication...');
+        const result = await signInAnonymously(auth);
+        console.log('Anonymous authentication successful', result.user.uid);
+        clearTimeout(safetyTimeout);
+        setAuthReady(true);
       } catch (error) {
         console.error('Error signing in anonymously:', error);
+        clearTimeout(safetyTimeout);
+        setLoading(false);
+        setAuthReady(true); // Set ready even on error to show UI
       }
     };
 
-    initAuth();
-
-    // Listen to auth state changes
+    // Listen to auth state changes first
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}` : 'No user');
       if (firebaseUser) {
+        clearTimeout(safetyTimeout);
+        setAuthReady(true);
         // Check if admin user exists in localStorage
         const savedUser = localStorage.getItem('tf_user');
         if (savedUser) {
           setUser(JSON.parse(savedUser));
         }
+      } else {
+        // Try to sign in if no user
+        initAuth();
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubscribeAuth();
+    };
   }, []);
 
   useEffect(() => {
     // Subscribe to Firestore mosques collection only after auth is ready
+    if (!authReady) {
+      console.log('Waiting for authentication to be ready...');
+      return;
+    }
+
     if (!auth.currentUser) {
-      console.log('Waiting for authentication...');
+      console.log('No current user, stopping loading');
+      setLoading(false);
       return;
     }
 
     console.log('Auth ready, subscribing to Firestore...');
+    
+    // Set a timeout to stop loading if Firestore doesn't respond
+    const timeoutId = setTimeout(() => {
+      console.error('Firestore connection timeout');
+      setLoading(false);
+    }, 3000);
+
     const q = query(collection(db, 'mosques'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      clearTimeout(timeoutId);
       console.log(`Received ${snapshot.size} mosques from Firestore`);
       const mosquesData: Mosque[] = [];
       snapshot.forEach((doc) => {
@@ -100,14 +141,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMosques(mosquesData);
       setLoading(false);
     }, (error) => {
+      clearTimeout(timeoutId);
       console.error('Error fetching mosques:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [auth.currentUser]);
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
+  }, [authReady]);
 
   const addMosque = useCallback(async (newMosque: Omit<Mosque, 'id' | 'createdAt' | 'status'>) => {
     try {

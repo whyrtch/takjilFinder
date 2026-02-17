@@ -18,9 +18,32 @@ const ListView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center h-full px-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-slate-500 text-sm">Loading mosques...</p>
+        <p className="text-slate-500 text-sm mb-2">Connecting to database...</p>
+        <p className="text-slate-400 text-xs text-center max-w-sm">
+          If this takes more than a few seconds, please check your internet connection or try refreshing the page.
+        </p>
+      </div>
+    );
+  }
+
+  if (mosques.length === 0 && !loading) {
+    return (
+      <div className="flex flex-col h-full">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-primary text-3xl font-bold">mosque</span>
+            <h1 className="text-xl font-bold tracking-tight">Mosque Explorer</h1>
+          </div>
+        </header>
+        <main className="flex-1 flex flex-col items-center justify-center px-8">
+          <span className="material-symbols-outlined text-6xl mb-4 opacity-20 text-slate-400">mosque</span>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">No mosques yet</p>
+          <p className="text-xs text-slate-400 text-center max-w-xs">
+            Be the first to add a mosque! Click the + button below to submit one.
+          </p>
+        </main>
       </div>
     );
   }

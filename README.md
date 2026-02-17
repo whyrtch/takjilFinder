@@ -59,6 +59,10 @@ npm run dev
 
 7. Open your browser and navigate to `http://localhost:3000`
 
+## 🚀 Deploying to Vercel
+
+See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for detailed deployment instructions and troubleshooting guide.
+
 ## 🛠️ Tech Stack
 
 - **Frontend Framework**: React 19.2.4
