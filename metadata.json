@@ -1,0 +1,8 @@
+
+{
+  "name": "TakjilFinder",
+  "description": "A community-driven platform to help Muslims find mosques providing free iftar (takjil) during Ramadan.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
