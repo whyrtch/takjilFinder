@@ -1,6 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Mosque, MosqueStatus, User } from './types';
+import { db, auth } from './firebase';
+import { collection, addDoc, onSnapshot, query, updateDoc, doc } from 'firebase/firestore';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 // Mock Data
 const INITIAL_MOSQUES: Mosque[] = [
@@ -54,39 +57,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading from Firestore
-    const savedMosques = localStorage.getItem('tf_mosques');
-    if (savedMosques) {
-      setMosques(JSON.parse(savedMosques));
-    } else {
-      setMosques(INITIAL_MOSQUES);
-    }
-    
-    const savedUser = localStorage.getItem('tf_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    
-    setLoading(false);
+    // Sign in anonymously
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.error('Error signing in anonymously:', error);
+      }
+    };
+
+    initAuth();
+
+    // Listen to auth state changes
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Check if admin user exists in localStorage
+        const savedUser = localStorage.getItem('tf_user');
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
+        }
+      }
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('tf_mosques', JSON.stringify(mosques));
-  }, [mosques]);
+    // Subscribe to Firestore mosques collection only after auth is ready
+    if (!auth.currentUser) return;
 
-  const addMosque = useCallback((newMosque: Omit<Mosque, 'id' | 'createdAt' | 'status'>) => {
-    const mosque: Mosque = {
-      ...newMosque,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: Date.now(),
-      status: MosqueStatus.PENDING,
-      image: `https://picsum.photos/seed/${Math.random()}/800/450`
-    };
-    setMosques(prev => [...prev, mosque]);
+    const q = query(collection(db, 'mosques'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const mosquesData: Mosque[] = [];
+      snapshot.forEach((doc) => {
+        mosquesData.push({ id: doc.id, ...doc.data() } as Mosque);
+      });
+      setMosques(mosquesData);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching mosques:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth.currentUser]);
+
+  const addMosque = useCallback(async (newMosque: Omit<Mosque, 'id' | 'createdAt' | 'status'>) => {
+    try {
+      const mosque = {
+        ...newMosque,
+        createdAt: Date.now(),
+        status: MosqueStatus.PENDING,
+        image: `https://picsum.photos/seed/${Math.random()}/800/450`
+      };
+      await addDoc(collection(db, 'mosques'), mosque);
+    } catch (error) {
+      console.error('Error adding mosque:', error);
+      throw error;
+    }
   }, []);
 
-  const updateMosqueStatus = useCallback((id: string, status: MosqueStatus) => {
-    setMosques(prev => prev.map(m => m.id === id ? { ...m, status } : m));
+  const updateMosqueStatus = useCallback(async (id: string, status: MosqueStatus) => {
+    try {
+      const mosqueRef = doc(db, 'mosques', id);
+      await updateDoc(mosqueRef, { status });
+    } catch (error) {
+      console.error('Error updating mosque status:', error);
+      throw error;
+    }
   }, []);
 
   const login = useCallback((email: string) => {

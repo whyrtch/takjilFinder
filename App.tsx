@@ -10,6 +10,7 @@ import SubmitForm from './views/SubmitForm';
 import AdminPortal from './views/AdminPortal';
 import AdminPending from './views/AdminPending';
 import AboutPage from './views/AboutPage';
+import MosqueDetail from './views/MosqueDetail';
 
 const AppContent: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -23,19 +24,22 @@ const AppContent: React.FC = () => {
 
   if (showSplash) return <SplashScreen />;
 
+  const hideBottomNav = location.pathname.startsWith('/mosque/');
+
   return (
-    <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark max-w-md mx-auto relative overflow-hidden shadow-2xl">
-      <main className="flex-1 overflow-y-auto hide-scrollbar pb-24">
+    <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark max-w-md mx-auto relative shadow-2xl">
+      <main className="flex-1 overflow-y-auto hide-scrollbar">
         <Routes>
           <Route path="/" element={<HomeMap />} />
           <Route path="/list" element={<ListView />} />
+          <Route path="/mosque/:id" element={<MosqueDetail />} />
           <Route path="/submit" element={<SubmitForm />} />
           <Route path="/admin" element={user ? <Navigate to="/admin/pending" /> : <AdminPortal />} />
           <Route path="/admin/pending" element={user ? <AdminPending /> : <Navigate to="/admin" />} />
           <Route path="/about" element={<AboutPage />} />
         </Routes>
       </main>
-      <BottomNav />
+      {!hideBottomNav && <BottomNav />}
     </div>
   );
 };

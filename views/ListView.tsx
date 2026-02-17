@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import { MosqueStatus } from '../types';
 
 const ListView: React.FC = () => {
+  const navigate = useNavigate();
   const { mosques } = useApp();
   const [filterVerified, setFilterVerified] = useState(false);
   const [search, setSearch] = useState('');
@@ -15,14 +17,14 @@ const ListView: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-full">
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-primary text-3xl font-bold">mosque</span>
           <h1 className="text-xl font-bold tracking-tight">Mosque Explorer</h1>
         </div>
         
-        <div className="flex gap-3 mb-4">
+        <div className="flex gap-3">
           <div className="relative flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
             <input 
@@ -40,20 +42,12 @@ const ListView: React.FC = () => {
             <span className="material-symbols-outlined text-xl">verified</span>
           </button>
         </div>
-
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          <button className="whitespace-nowrap px-4 py-1.5 rounded-full bg-primary text-white text-xs font-semibold">All</button>
-          <button className="whitespace-nowrap px-4 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 text-xs font-semibold">Nearby</button>
-          <button className="whitespace-nowrap px-4 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 text-xs font-semibold">Free Meals</button>
-          <button className="whitespace-nowrap px-4 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 text-xs font-semibold">Dates Only</button>
-        </div>
       </header>
 
       <main className="flex-1 p-4 space-y-4">
         {filtered.map((mosque) => (
           <div key={mosque.id} className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
-            <div className="relative h-32 bg-slate-200">
-              <img src={mosque.image} alt={mosque.name} className="w-full h-full object-cover" />
+            <div className="relative bg-slate-200">
               <div className="absolute top-2 right-2 px-2 py-1 bg-white/90 dark:bg-black/50 rounded-lg text-[10px] font-bold text-primary backdrop-blur-sm">
                 1.2 km away
               </div>
@@ -78,7 +72,10 @@ const ListView: React.FC = () => {
                   </span>
                 ))}
               </div>
-              <button className="w-full bg-primary/5 text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors">
+              <button 
+                onClick={() => navigate(`/mosque/${mosque.id}`)}
+                className="w-full bg-primary/5 text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
+              >
                 View Details
                 <span className="material-symbols-outlined text-sm">chevron_right</span>
               </button>

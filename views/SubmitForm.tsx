@@ -1,7 +1,49 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Custom marker icon for location picker
+const pickerIcon = new L.DivIcon({
+  className: 'custom-marker',
+  html: `
+    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 40px; height: 40px; background: #0f9f59; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white; animation: pulse 2s infinite;">
+        <span style="color: white; font-size: 24px;">📍</span>
+      </div>
+      <div style="position: absolute; bottom: -4px; width: 8px; height: 8px; background: white; transform: rotate(45deg);"></div>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40]
+});
+
+interface LocationPickerProps {
+  position: [number, number];
+  onLocationChange: (lat: number, lng: number) => void;
+}
+
+const LocationPicker: React.FC<LocationPickerProps> = ({ position, onLocationChange }) => {
+  useMapEvents({
+    click(e) {
+      onLocationChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
+
+  return <Marker position={position} icon={pickerIcon} />;
+};
+
+// Component to update map center
+const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+};
 
 const SubmitForm: React.FC = () => {
   const navigate = useNavigate();
@@ -11,8 +53,63 @@ const SubmitForm: React.FC = () => {
   const [address, setAddress] = useState('');
   const [menu, setMenu] = useState(['']);
   const [notes, setNotes] = useState('');
+  const [portion, setPortion] = useState('0');
+  const [iftarTime, setIftarTime] = useState('18:20');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [location, setLocation] = useState<[number, number]>([-6.2088, 106.8456]); // Default Jakarta
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearchAddress = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+    } catch (error) {
+      console.error('Error searching address:', error);
+      alert('Failed to search address. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (result: any) => {
+    setLocation([parseFloat(result.lat), parseFloat(result.lon)]);
+    setAddress(result.display_name);
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  const handleLocationChange = (lat: number, lng: number) => {
+    setLocation([lat, lng]);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation([position.coords.latitude, position.coords.longitude]);
+          setShowMapPicker(true);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          alert('Could not get your location. Please select manually on the map.');
+          setShowMapPicker(true);
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+      setShowMapPicker(true);
+    }
+  };
 
   const handleAddMenuItem = () => setMenu([...menu, '']);
   const handleRemoveMenuItem = (index: number) => setMenu(menu.filter((_, i) => i !== index));
@@ -22,23 +119,28 @@ const SubmitForm: React.FC = () => {
     setMenu(newMenu);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !address) return;
     
     setIsSubmitting(true);
-    // Simulate API delay
-    setTimeout(() => {
-      addMosque({
+    try {
+      await addMosque({
         name,
         address,
-        location: { lat: -6.2 + Math.random() * 0.1, lng: 106.8 + Math.random() * 0.1 },
+        location: { lat: location[0], lng: location[1] },
         menu: menu.filter(m => m.trim() !== ''),
-        notes
+        notes,
+        portion: portion || '0',
+        iftarTime: iftarTime || undefined
       });
-      setIsSubmitting(false);
       setSuccess(true);
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting mosque:', error);
+      alert('Failed to submit mosque. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (success) {
@@ -62,7 +164,7 @@ const SubmitForm: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-full">
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
         <h1 className="text-xl font-bold tracking-tight">Submit New Mosque</h1>
         <p className="text-xs text-slate-400 mt-1">Help the community find iftar by sharing details.</p>
@@ -85,12 +187,102 @@ const SubmitForm: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-bold block">Location Picker</label>
-              <div className="relative h-32 rounded-xl bg-slate-100 dark:bg-white/10 overflow-hidden group cursor-pointer border border-dashed border-slate-300 dark:border-white/20">
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
-                  <span className="material-symbols-outlined text-3xl mb-1">my_location</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Tap to Pin on Map</span>
+              {!showMapPicker ? (
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => setShowMapPicker(true)}
+                    className="relative h-32 rounded-xl bg-slate-100 dark:bg-white/10 overflow-hidden group cursor-pointer border border-dashed border-slate-300 dark:border-white/20 hover:border-primary transition-colors"
+                  >
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-3xl mb-1">my_location</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Tap to Pin on Map</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    className="w-full bg-primary/10 text-primary py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">gps_fixed</span>
+                    Use My Current Location
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Address Search */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchAddress())}
+                        placeholder="Search address..."
+                        className="flex-1 bg-slate-100 dark:bg-white/5 border-none rounded-lg py-2 px-3 text-xs focus:ring-2 focus:ring-primary/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSearchAddress}
+                        disabled={isSearching}
+                        className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
+                      >
+                        {isSearching ? '...' : 'Search'}
+                      </button>
+                    </div>
+                    
+                    {searchResults.length > 0 && (
+                      <div className="bg-white dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 max-h-32 overflow-y-auto">
+                        {searchResults.map((result, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSearchResult(result)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-white/5 border-b border-slate-100 dark:border-white/5 last:border-b-0"
+                          >
+                            {result.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative rounded-xl overflow-hidden border-2 border-primary" style={{ height: '256px' }}>
+                    <MapContainer
+                      center={location}
+                      zoom={15}
+                      style={{ height: '100%', width: '100%' }}
+                      zoomControl={true}
+                    >
+                      <TileLayer
+                        attribution=''
+                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
+                      />
+                      <MapUpdater center={location} />
+                      <LocationPicker position={location} onLocationChange={handleLocationChange} />
+                    </MapContainer>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      className="flex-1 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-sm">gps_fixed</span>
+                      My Location
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMapPicker(false)}
+                      className="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold"
+                    >
+                      Confirm Location
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 text-center">
+                    📍 Lat: {location[0].toFixed(6)}, Lng: {location[1].toFixed(6)}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -149,6 +341,29 @@ const SubmitForm: React.FC = () => {
                 placeholder="Specific info (e.g., every Friday only)"
                 className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold block">Available Portions (Optional)</label>
+              <input 
+                type="text" 
+                value={portion}
+                onChange={(e) => setPortion(e.target.value)}
+                placeholder="e.g., 200"
+                className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-xs text-slate-400">Approximate number of portions available</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold block">Iftar Time (Optional)</label>
+              <input 
+                type="time" 
+                value={iftarTime}
+                onChange={(e) => setIftarTime(e.target.value)}
+                className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-xs text-slate-400">Time when iftar is served</p>
             </div>
           </div>
 

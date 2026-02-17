@@ -16,8 +16,8 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 dark:bg-background-dark/95 ios-blur border-t border-slate-100 dark:border-white/5 px-4 pb-8 pt-2 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center justify-between">
+    <nav className="sticky bottom-0 w-full bg-white/95 dark:bg-background-dark/95 ios-blur border-t border-slate-100 dark:border-white/5 px-4 pb-safe pt-2 z-[1001] shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center justify-between pb-2">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -28,7 +28,7 @@ const BottomNav: React.FC = () => {
             `}
           >
             {item.primary ? (
-              <div className="bg-primary text-white p-3 rounded-full -mt-10 shadow-lg shadow-primary/30 border-4 border-white dark:border-background-dark active:scale-90 transition-transform">
+              <div className="bg-primary text-white p-3 rounded-full -mt-10 shadow-lg shadow-primary/30 border-4 border-white dark:border-background-dark active:scale-90 transition-transform relative z-10">
                 <span className="material-symbols-outlined text-2xl">add</span>
               </div>
             ) : (

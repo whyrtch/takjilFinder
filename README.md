@@ -18,6 +18,7 @@ A community-driven web application to help people find mosques offering takjil (
 
 - Node.js (v16 or higher)
 - npm or yarn
+- Firebase project with Firestore enabled
 
 ### Installation
 
@@ -32,12 +33,31 @@ cd takjilfinder
 npm install
 ```
 
-3. Start the development server:
+3. Create a `.env` file in the root directory with your Firebase configuration:
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+4. Enable Anonymous Authentication in your Firebase Console:
+   - Go to Authentication > Sign-in method
+   - Enable "Anonymous" provider
+
+5. Create a Firestore database:
+   - Go to Firestore Database
+   - Create database in production mode (or test mode for development)
+   - Create a collection named `mosques`
+
+6. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+7. Open your browser and navigate to `http://localhost:3000`
 
 ## 🛠️ Tech Stack
 
@@ -48,6 +68,8 @@ npm run dev
 - **Styling**: Tailwind CSS
 - **Icons**: Material Symbols
 - **Fonts**: Plus Jakarta Sans
+- **Backend**: Firebase (Firestore + Anonymous Auth)
+- **Maps**: OpenStreetMap (Leaflet + React Leaflet)
 
 ## 📱 App Structure
 
@@ -70,18 +92,19 @@ takjilfinder/
 
 ## 🔐 Admin Access
 
-For testing purposes, use these credentials:
-- **Email**: admin@takjilfinder.com
-- **Password**: admin123
+Admin credentials are configured via environment variables:
+- Set `VITE_ADMIN_ACCOUNT` in your `.env` file (default: admin@takjilfinder.com)
+- Set `VITE_ADMIN_PASSWORD` in your `.env` file (default: admin123)
 
-> ⚠️ Note: This is a demo implementation. In production, implement proper authentication and authorization.
+> ⚠️ Note: This is a demo implementation using localStorage for admin sessions. In production, implement proper Firebase Authentication with admin roles and secure credential management.
 
 ## 📊 Data Storage
 
-Currently uses localStorage for data persistence. The app includes:
-- Mock mosque data for demonstration
-- Status tracking (pending/verified/rejected)
-- User authentication state
+Uses Firebase Firestore for real-time data persistence:
+- **Collection**: `mosques` - stores all mosque submissions
+- **Authentication**: Anonymous sign-in for all users
+- **Real-time updates**: Automatic sync when data changes
+- **Status tracking**: pending/verified/rejected workflow
 
 ## 🎨 Design Features
 
@@ -93,14 +116,15 @@ Currently uses localStorage for data persistence. The app includes:
 
 ## 🚧 Future Enhancements
 
-- [ ] Integration with real mapping services (Google Maps, Mapbox)
-- [ ] Backend API with database (Firebase, Supabase)
-- [ ] Real-time location tracking
+- [ ] Real-time location tracking with geolocation
 - [ ] Push notifications for nearby mosques
 - [ ] User reviews and ratings
 - [ ] Photo uploads for mosques
 - [ ] Multi-language support
 - [ ] Progressive Web App (PWA) capabilities
+- [ ] Email/social authentication for admins
+- [ ] Search and filter functionality
+- [ ] Clustering for map markers
 
 ## 🤝 Contributing
 
