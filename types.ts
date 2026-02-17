@@ -22,6 +22,8 @@ export interface Mosque {
   createdBy?: string;
   distance?: string;
   image?: string;
+  portion?: string;
+  iftarTime?: string;
 }
 
 export interface User {

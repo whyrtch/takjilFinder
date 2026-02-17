@@ -8,12 +8,15 @@ const AdminPortal: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const adminEmail = import.meta.env.VITE_ADMIN_ACCOUNT;
+  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+
   const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email === 'admin@takjilfinder.com' && password === 'admin123') {
+    e.preventDefault();    
+    if (email === adminEmail && password === adminPassword) {
       login(email);
     } else {
-      setError('Invalid credentials. Hint: use admin@takjilfinder.com / admin123');
+      setError('Invalid credentials.');
     }
   };
 
@@ -38,7 +41,7 @@ const AdminPortal: React.FC = () => {
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@takjilfinder.com"
+                  placeholder={"email@email.com"}
                   className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                 />
               </div>

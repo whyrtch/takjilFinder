@@ -1,81 +1,96 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import { Mosque, MosqueStatus } from '../types';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Custom marker icon
+const mosqueIcon = new L.DivIcon({
+  className: 'custom-marker',
+  html: `
+    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 40px; height: 40px; background: #0f9f59; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;">
+        <span style="color: white; font-size: 24px;">🕌</span>
+      </div>
+      <div style="position: absolute; bottom: -4px; width: 8px; height: 8px; background: white; transform: rotate(45deg);"></div>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40]
+});
+
+const selectedMosqueIcon = new L.DivIcon({
+  className: 'custom-marker',
+  html: `
+    <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 40px; height: 40px; background: #FFD700; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 3px solid white;">
+        <span style="color: white; font-size: 24px;">🕌</span>
+      </div>
+      <div style="position: absolute; bottom: -4px; width: 8px; height: 8px; background: white; transform: rotate(45deg);"></div>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40]
+});
 
 const HomeMap: React.FC = () => {
+  const navigate = useNavigate();
   const { mosques } = useApp();
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
 
   const verifiedMosques = mosques.filter(m => m.status === MosqueStatus.VERIFIED);
 
+  // Default center (Jakarta)
+  const defaultCenter: [number, number] = [-6.2088, 106.8456];
+
   return (
-    <div className="relative h-screen w-full bg-slate-200 overflow-hidden">
-      {/* Mock Map Background */}
-      <div className="absolute inset-0 bg-[#f9f5ed]">
-        <div className="absolute inset-0 opacity-10 geometric-pattern"></div>
-        {/* Mock Map Grid Lines */}
-        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#0f9f59 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+    <div className="relative h-full w-full overflow-hidden">
+      <MapContainer
+        center={defaultCenter}
+        zoom={12}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={false}
+      >
+        <TileLayer
+          attribution=''
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
+        />
         
-        {/* Mock Markers */}
+        {/* Markers for verified mosques */}
         {verifiedMosques.map(mosque => (
-          <button
+          <Marker
             key={mosque.id}
-            onClick={() => setSelectedMosque(mosque)}
-            className="absolute -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-90"
-            style={{ 
-              top: `${50 + (mosque.location.lat + 6.2) * 500}%`, 
-              left: `${50 + (mosque.location.lng - 106.8) * 500}%` 
+            position={[mosque.location.lat, mosque.location.lng]}
+            icon={selectedMosque?.id === mosque.id ? selectedMosqueIcon : mosqueIcon}
+            eventHandlers={{
+              click: () => setSelectedMosque(mosque)
             }}
-          >
-            <div className="relative flex items-center justify-center">
-              <div className="absolute animate-ping bg-primary/20 rounded-full w-12 h-12"></div>
-              <div className={`
-                w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white
-                ${selectedMosque?.id === mosque.id ? 'bg-accent-gold' : 'bg-primary'}
-              `}>
-                <span className="material-symbols-outlined text-white text-xl fill-1">mosque</span>
-              </div>
-              <div className="absolute -bottom-1 w-2 h-2 bg-white rotate-45 transform"></div>
-            </div>
-          </button>
+          />
         ))}
-      </div>
+      </MapContainer>
 
       {/* Top Search Bar Overlay */}
-      <div className="absolute top-6 left-0 right-0 px-4 z-20">
-        <div className="flex gap-3">
-          <div className="flex-1 bg-white dark:bg-background-dark shadow-xl rounded-2xl flex items-center px-4 py-3 border border-slate-100 dark:border-white/10">
+      <div className="absolute top-6 left-0 right-0 px-4 z-[1000] pointer-events-none">
+        <div className="pointer-events-auto">
+          <div 
+            onClick={() => navigate('/list')}
+            className="bg-white dark:bg-background-dark shadow-xl rounded-2xl flex items-center px-4 py-3 border border-slate-100 dark:border-white/10 cursor-pointer hover:border-primary/30 transition-colors"
+          >
             <span className="material-symbols-outlined text-slate-400 mr-2">search</span>
-            <input 
-              type="text" 
-              placeholder="Find nearby mosques..." 
-              className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm"
-            />
+            <span className="text-sm text-slate-400">Find nearby mosques...</span>
           </div>
-          <button className="bg-white dark:bg-background-dark p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 text-primary">
-            <span className="material-symbols-outlined">tune</span>
-          </button>
         </div>
-      </div>
-
-      {/* Floating Action Buttons */}
-      <div className="absolute right-4 bottom-32 flex flex-col gap-3 z-10">
-        <button className="bg-white p-3 rounded-xl shadow-lg text-slate-600">
-          <span className="material-symbols-outlined">add</span>
-        </button>
-        <button className="bg-white p-3 rounded-xl shadow-lg text-slate-600">
-          <span className="material-symbols-outlined">remove</span>
-        </button>
-        <button className="bg-primary text-white p-3 rounded-xl shadow-lg">
-          <span className="material-symbols-outlined">my_location</span>
-        </button>
       </div>
 
       {/* Bottom Sheet Card */}
       {selectedMosque && (
-        <div className="absolute bottom-24 left-0 right-0 px-4 z-40 animate-in slide-in-from-bottom duration-300">
-          <div className="bg-white dark:bg-background-dark rounded-3xl p-5 shadow-2xl border border-primary/10 relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 px-4 z-[1000] animate-in slide-in-from-bottom duration-300 pointer-events-none pb-20">
+          <div className="bg-white dark:bg-background-dark rounded-3xl p-5 shadow-2xl border border-primary/10 relative overflow-hidden pointer-events-auto">
              {/* Handle for visual aesthetic */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
             
@@ -100,16 +115,31 @@ const HomeMap: React.FC = () => {
                   {selectedMosque.address}
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedMosque.menu.map(item => (
-                    <span key={item} className="px-2 py-1 bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider rounded-md border border-primary/10">
+                  {selectedMosque.menu.map((item, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider rounded-md border border-primary/10">
                       {item}
                     </span>
                   ))}
                 </div>
-                <button className="w-full bg-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  <span className="material-symbols-outlined">directions</span>
-                  Get Directions
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => navigate(`/mosque/${selectedMosque.id}`)}
+                    className="flex-1 bg-primary/10 text-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined">info</span>
+                    Details
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedMosque.location.lat},${selectedMosque.location.lng}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="flex-1 bg-primary text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined">directions</span>
+                    Directions
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,7 +1,31 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 const AboutPage: React.FC = () => {
+  const [showCopied, setShowCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href.replace(window.location.hash, '');
+    
+    try {
+      if (navigator.share) {
+        // Use native share if available
+        await navigator.share({
+          title: 'TakjilFinder',
+          text: 'Find mosques offering free Iftar during Ramadan',
+          url: url
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(url);
+        setShowCopied(true);
+        setTimeout(() => setShowCopied(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
@@ -72,14 +96,17 @@ const AboutPage: React.FC = () => {
           <section className="space-y-4 pb-12">
             <h3 className="text-lg font-bold">Connect With Us</h3>
             <div className="grid grid-cols-1 gap-3">
-              <a href="#" className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
+              <a 
+                href="mailto:fandiakost@gmail.com?subject=TakjilFinder Support&body=Hello TakjilFinder Team,"
+                className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary/30 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-primary">mail</span>
                   <span className="text-sm font-semibold">Support Email</span>
                 </div>
                 <span className="material-symbols-outlined text-slate-300">chevron_right</span>
               </a>
-              <a href="#" className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
+              <a href="#" className="flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary/30 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-primary">language</span>
                   <span className="text-sm font-semibold">Official Website</span>
@@ -88,15 +115,20 @@ const AboutPage: React.FC = () => {
               </a>
             </div>
 
-            <div className="flex justify-center gap-6 pt-6">
-              <button className="size-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+            <div className="flex justify-center gap-6 pt-6 relative">
+              <button 
+                onClick={handleShare}
+                className="size-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 active:scale-90 transition-transform"
+              >
                 <span className="material-symbols-outlined">share</span>
               </button>
-              <button className="size-12 rounded-full bg-[#1da1f2] flex items-center justify-center text-white shadow-lg shadow-blue-400/20">
+              {showCopied && (
+                <div className="absolute -top-12 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
+                  Link copied!
+                </div>
+              )}
+              <button className="size-12 rounded-full bg-[#1da1f2] flex items-center justify-center text-white shadow-lg shadow-blue-400/20 active:scale-90 transition-transform">
                 <span className="material-symbols-outlined">public</span>
-              </button>
-              <button className="size-12 rounded-full bg-[#e1306c] flex items-center justify-center text-white shadow-lg shadow-pink-400/20">
-                <span className="material-symbols-outlined">camera</span>
               </button>
             </div>
 
