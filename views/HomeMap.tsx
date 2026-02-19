@@ -52,11 +52,20 @@ const userLocationIcon = new L.DivIcon({
 });
 
 // Component to update map center
-const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
+const MapUpdater: React.FC<{ center: [number, number]; shouldCenter: boolean }> = ({ center, shouldCenter }) => {
   const map = useMap();
+  
   React.useEffect(() => {
-    map.setView(center, 15);
-  }, [center, map]);
+    if (shouldCenter) {
+      // Small delay to ensure map is fully loaded
+      setTimeout(() => {
+        map.flyTo(center, 16, {
+          duration: 1.5
+        });
+      }, 100);
+    }
+  }, [center, shouldCenter, map]);
+  
   return null;
 };
 
@@ -66,6 +75,7 @@ const HomeMap: React.FC = () => {
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-6.2088, 106.8456]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [shouldCenterMap, setShouldCenterMap] = useState(false);
 
   const handleRating = async (mosqueId: string, isThumbsUp: boolean) => {
     try {
@@ -82,6 +92,8 @@ const HomeMap: React.FC = () => {
           const newCenter: [number, number] = [position.coords.latitude, position.coords.longitude];
           setMapCenter(newCenter);
           setUserLocation(newCenter);
+          setShouldCenterMap(true);
+          setTimeout(() => setShouldCenterMap(false), 2000);
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -98,6 +110,8 @@ const HomeMap: React.FC = () => {
           const newCenter: [number, number] = [position.coords.latitude, position.coords.longitude];
           setMapCenter(newCenter);
           setUserLocation(newCenter);
+          setShouldCenterMap(true);
+          setTimeout(() => setShouldCenterMap(false), 2000);
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -116,22 +130,24 @@ const HomeMap: React.FC = () => {
 
   const displayMosques = mosques.filter(m => m.status !== MosqueStatus.REJECTED);
 
-  // Default center (Jakarta)
-  const defaultCenter: [number, number] = [-6.2088, 106.8456];
-
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden" style={{ height: "100vh" }}>
       <MapContainer
         center={mapCenter}
         zoom={12}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
+        scrollWheelZoom={true}
+        dragging={true}
+        touchZoom={true}
       >
         <TileLayer
-          attribution=''
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
+          maxZoom={19}
+          minZoom={3}
         />
-        <MapUpdater center={mapCenter} />
+        <MapUpdater center={mapCenter} shouldCenter={shouldCenterMap} />
         
         {/* User location marker */}
         {userLocation && (
@@ -155,7 +171,7 @@ const HomeMap: React.FC = () => {
       </MapContainer>
 
       {/* Top Search Bar Overlay */}
-      <div className="absolute top-6 left-0 right-0 px-4 z-[400] pointer-events-none">
+      <div className="absolute top-6 left-0 right-0 px-4 z-[1000] pointer-events-none">
         <div className="flex gap-3 pointer-events-auto">
           <div 
             onClick={() => navigate('/list')}
