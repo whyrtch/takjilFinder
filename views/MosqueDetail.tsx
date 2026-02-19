@@ -24,7 +24,7 @@ const mosqueIcon = new L.DivIcon({
 const MosqueDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { mosques } = useApp();
+  const { mosques, rateMosque, getUserRating } = useApp();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showCopied, setShowCopied] = useState(false);
 
@@ -52,6 +52,15 @@ const MosqueDetail: React.FC = () => {
       }
     } catch (error) {
       console.error('Error sharing:', error);
+    }
+  };
+
+  const handleRating = async (isThumbsUp: boolean) => {
+    if (!mosque) return;
+    try {
+      await rateMosque(mosque.id, isThumbsUp);
+    } catch (error) {
+      console.error('Rating error:', error);
     }
   };
 
@@ -109,7 +118,7 @@ const MosqueDetail: React.FC = () => {
         )}
 
         {/* Mosque Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-white mb-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-xs font-bold flex items-center gap-1">
               <span className="material-symbols-outlined text-sm fill-1">verified</span>
@@ -122,7 +131,7 @@ const MosqueDetail: React.FC = () => {
           <h1 className="text-2xl font-extrabold mb-1 leading-tight">{mosque.name}</h1>
           <p className="text-sm text-white/90 flex items-center gap-1">
             <span className="material-symbols-outlined text-base">calendar_today</span>
-            Ramadan 1445H • Jakarta
+            Ramadan 1447H • Jakarta
           </p>
         </div>
       </div>
@@ -176,6 +185,52 @@ const MosqueDetail: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Community Rating */}
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5">
+          <h2 className="text-base font-bold flex items-center gap-2 mb-4">
+            <span className="text-yellow-500">●</span>
+            Community Rating
+          </h2>
+          <p className="text-xs text-slate-400 mb-4">Help others by rating this mosque</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleRating(true)}
+              disabled={getUserRating(mosque.id) !== null}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all ${
+                getUserRating(mosque.id) === 'up'
+                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30 border-2 border-green-500'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:bg-green-50 hover:text-green-600 border-2 border-transparent'
+              } disabled:cursor-not-allowed`}
+            >
+              <span className="material-symbols-outlined text-2xl">thumb_up</span>
+              <div className="text-left">
+                <div className="text-xs font-medium opacity-60">Helpful</div>
+                <div className="text-lg font-bold">{mosque.thumbsUp || 0}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => handleRating(false)}
+              disabled={getUserRating(mosque.id) !== null}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all ${
+                getUserRating(mosque.id) === 'down'
+                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 border-2 border-red-500'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:bg-red-50 hover:text-red-600 border-2 border-transparent'
+              } disabled:cursor-not-allowed`}
+            >
+              <span className="material-symbols-outlined text-2xl">thumb_down</span>
+              <div className="text-left">
+                <div className="text-xs font-medium opacity-60">Not Helpful</div>
+                <div className="text-lg font-bold">{mosque.thumbsDown || 0}</div>
+              </div>
+            </button>
+          </div>
+          {getUserRating(mosque.id) && (
+            <p className="text-xs text-center text-slate-400 mt-3">
+              Thank you for your feedback!
+            </p>
+          )}
         </div>
 
         {/* Location Section */}

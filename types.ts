@@ -24,6 +24,8 @@ export interface Mosque {
   image?: string;
   portion?: string;
   iftarTime?: string;
+  thumbsUp?: number;
+  thumbsDown?: number;
 }
 
 export interface User {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import { Mosque, MosqueStatus } from '../types';
@@ -62,12 +62,36 @@ const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
 
 const HomeMap: React.FC = () => {
   const navigate = useNavigate();
-  const { mosques, loading } = useApp();
+  const { mosques, loading, rateMosque, getUserRating } = useApp();
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-6.2088, 106.8456]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
+  const handleRating = async (mosqueId: string, isThumbsUp: boolean) => {
+    try {
+      await rateMosque(mosqueId, isThumbsUp);
+    } catch (error) {
+      console.error('Rating error:', error);
+    }
+  };
+
   const handleMyLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newCenter: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setMapCenter(newCenter);
+          setUserLocation(newCenter);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Silently fail on first load, don't show alert
+        }
+      );
+    }
+  };
+
+  const handleMyLocationClick = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -85,6 +109,12 @@ const HomeMap: React.FC = () => {
     }
   };
 
+  // Automatically get user location on component mount
+  useEffect(() => {
+    handleMyLocation();
+  }, []);
+
+  const displayMosques = mosques.filter(m => m.status !== MosqueStatus.REJECTED);
 
   // Default center (Jakarta)
   const defaultCenter: [number, number] = [-6.2088, 106.8456];
@@ -111,8 +141,8 @@ const HomeMap: React.FC = () => {
           />
         )}
         
-        {/* Markers for verified mosques */}
-        {mosques.map(mosque => (
+        {/* Markers for all mosques (excluding rejected) */}
+        {displayMosques.map(mosque => (
           <Marker
             key={mosque.id}
             position={[mosque.location.lat, mosque.location.lng]}
@@ -135,7 +165,7 @@ const HomeMap: React.FC = () => {
             <span className="text-sm text-slate-400">Find nearby mosques...</span>
           </div>
           <button
-            onClick={handleMyLocation}
+            onClick={handleMyLocationClick}
             className="bg-white dark:bg-background-dark p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-white/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
           >
             <span className="material-symbols-outlined">my_location</span>
@@ -177,6 +207,35 @@ const HomeMap: React.FC = () => {
                     </span>
                   ))}
                 </div>
+                
+                {/* Rating Section */}
+                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                  <button
+                    onClick={() => handleRating(selectedMosque.id, true)}
+                    disabled={getUserRating(selectedMosque.id) !== null}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      getUserRating(selectedMosque.id) === 'up'
+                        ? 'bg-green-100 text-green-600 dark:bg-green-900/30'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:bg-green-50 hover:text-green-600'
+                    } disabled:cursor-not-allowed`}
+                  >
+                    <span className="material-symbols-outlined text-base">thumb_up</span>
+                    <span className="text-xs font-bold">{selectedMosque.thumbsUp || 0}</span>
+                  </button>
+                  <button
+                    onClick={() => handleRating(selectedMosque.id, false)}
+                    disabled={getUserRating(selectedMosque.id) !== null}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                      getUserRating(selectedMosque.id) === 'down'
+                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:bg-red-50 hover:text-red-600'
+                    } disabled:cursor-not-allowed`}
+                  >
+                    <span className="material-symbols-outlined text-base">thumb_down</span>
+                    <span className="text-xs font-bold">{selectedMosque.thumbsDown || 0}</span>
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2">
                   <button 
                     onClick={() => navigate(`/mosque/${selectedMosque.id}`)}

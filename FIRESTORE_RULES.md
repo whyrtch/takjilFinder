@@ -4,7 +4,7 @@ Your Firestore database uses public read/write rules for the mosques collection 
 
 ## Current Rules
 
-Your Firestore rules for TakjilFinder:
+Your Firestore rules for TakjilFinder should include rating updates:
 
 ```javascript
 // TakjilFinder - Public Submission
@@ -15,7 +15,11 @@ match /mosques/{mosqueId} {
   // 🔓 Public can create new mosque (but force status = "pending")
   allow create: if true;
   
-  // 🔒 Only admin can update
+  // 🔓 Public can update ratings (thumbsUp, thumbsDown only)
+  allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['thumbsUp', 'thumbsDown']);
+  
+  // 🔒 Admin can update all fields
   allow update: if request.auth != null && 
                  request.auth.token.role == "admin";
   
@@ -29,7 +33,8 @@ match /mosques/{mosqueId} {
 
 - **read**: Anyone can read mosques (no authentication required)
 - **create**: Anyone can submit new mosques (no authentication required)
-- **update**: Only authenticated admin users can update mosques
+- **update (ratings)**: Anyone can update thumbsUp/thumbsDown counts
+- **update (admin)**: Only authenticated admin users can update all other fields
 - **delete**: Only authenticated admin users can delete mosques
 
 ## Authentication Flow:

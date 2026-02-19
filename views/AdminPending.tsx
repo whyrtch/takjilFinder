@@ -51,10 +51,6 @@ const AdminPending: React.FC = () => {
                 </p>
               </div>
 
-              <div className="aspect-video rounded-xl overflow-hidden bg-slate-100">
-                <img src={mosque.image} alt={mosque.name} className="w-full h-full object-cover" />
-              </div>
-
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submitted Menu</p>
                 <div className="flex flex-wrap gap-2">
