@@ -85,7 +85,6 @@ const HomeMap: React.FC = () => {
     }
   };
 
-  const verifiedMosques = mosques.filter(m => m.status === MosqueStatus.VERIFIED);
 
   // Default center (Jakarta)
   const defaultCenter: [number, number] = [-6.2088, 106.8456];
@@ -113,7 +112,7 @@ const HomeMap: React.FC = () => {
         )}
         
         {/* Markers for verified mosques */}
-        {verifiedMosques.map(mosque => (
+        {mosques.map(mosque => (
           <Marker
             key={mosque.id}
             position={[mosque.location.lat, mosque.location.lng]}
@@ -126,7 +125,7 @@ const HomeMap: React.FC = () => {
       </MapContainer>
 
       {/* Top Search Bar Overlay */}
-      <div className="absolute top-6 left-0 right-0 px-4 z-[1000] pointer-events-none">
+      <div className="absolute top-6 left-0 right-0 px-4 z-[400] pointer-events-none">
         <div className="flex gap-3 pointer-events-auto">
           <div 
             onClick={() => navigate('/list')}
@@ -146,7 +145,7 @@ const HomeMap: React.FC = () => {
 
       {/* Bottom Sheet Card */}
       {selectedMosque && (
-        <div className="absolute bottom-0 left-0 right-0 px-4 z-[1000] animate-in slide-in-from-bottom duration-300 pointer-events-none pb-20">
+        <div className="absolute bottom-0 left-0 right-0 px-4 z-[400] animate-in slide-in-from-bottom duration-300 pointer-events-none pb-20">
           <div className="bg-white dark:bg-background-dark rounded-3xl p-5 shadow-2xl border border-primary/10 relative overflow-hidden pointer-events-auto">
              {/* Handle for visual aesthetic */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
