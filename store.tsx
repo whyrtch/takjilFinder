@@ -45,6 +45,8 @@ interface AppContextType {
   loading: boolean;
   addMosque: (mosque: Omit<Mosque, 'id' | 'createdAt' | 'status'>) => void;
   updateMosqueStatus: (id: string, status: MosqueStatus) => void;
+  rateMosque: (mosqueId: string, isThumbsUp: boolean) => Promise<void>;
+  getUserRating: (mosqueId: string) => 'up' | 'down' | null;
   login: (email: string) => void;
   logout: () => void;
 }
@@ -173,8 +175,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // Rating functions
+  const rateMosque = useCallback(async (mosqueId: string, isThumbsUp: boolean) => {
+    try {
+      const deviceId = getDeviceId();
+      const ratingKey = `rating_${mosqueId}`;
+      const existingRating = localStorage.getItem(ratingKey);
+
+      // Check if user already rated
+      if (existingRating) {
+        console.log('User already rated this mosque');
+        return;
+      }
+
+      // Update mosque rating count
+      const mosqueRef = doc(db, 'mosques', mosqueId);
+      const mosque = mosques.find(m => m.id === mosqueId);
+      
+      if (mosque) {
+        const currentThumbsUp = mosque.thumbsUp || 0;
+        const currentThumbsDown = mosque.thumbsDown || 0;
+        
+        await updateDoc(mosqueRef, {
+          thumbsUp: isThumbsUp ? currentThumbsUp + 1 : currentThumbsUp,
+          thumbsDown: !isThumbsUp ? currentThumbsDown + 1 : currentThumbsDown
+        });
+
+        // Store rating in localStorage
+        localStorage.setItem(ratingKey, isThumbsUp ? 'up' : 'down');
+      }
+    } catch (error) {
+      console.error('Error rating mosque:', error);
+      throw error;
+    }
+  }, [mosques]);
+
+  const getUserRating = useCallback((mosqueId: string): 'up' | 'down' | null => {
+    const ratingKey = `rating_${mosqueId}`;
+    const rating = localStorage.getItem(ratingKey);
+    return rating as 'up' | 'down' | null;
+  }, []);
+
+  // Helper function to get device ID
+  const getDeviceId = () => {
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+  };
+
   return (
-    <AppContext.Provider value={{ mosques, user, loading, addMosque, updateMosqueStatus, login, logout }}>
+    <AppContext.Provider value={{ mosques, user, loading, addMosque, updateMosqueStatus, rateMosque, getUserRating, login, logout }}>
       {children}
     </AppContext.Provider>
   );
