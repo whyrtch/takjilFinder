@@ -1,14 +1,23 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import { MosqueStatus } from '../types';
+import { getUserLocation, getDistanceText, calculateDistance } from '../utils/utils';
 
 const ListView: React.FC = () => {
   const navigate = useNavigate();
   const { mosques, loading, rateMosque, getUserRating } = useApp();
   const [filterVerified, setFilterVerified] = useState(false);
   const [search, setSearch] = useState('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [sortByDistance, setSortByDistance] = useState(false);
+
+  // Get user location on mount
+  useEffect(() => {
+    getUserLocation()
+      .then((loc) => setUserLocation(loc))
+      .catch((error) => console.log('Could not get user location:', error));
+  }, []);
 
   const handleRating = async (mosqueId: string, isThumbsUp: boolean, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
@@ -19,10 +28,11 @@ const ListView: React.FC = () => {
     }
   };
 
-  const filtered = mosques.filter(m => {
+  // Filter mosques
+  let filtered = mosques.filter((m) => {
     // Don't show rejected mosques
     if (m.status === MosqueStatus.REJECTED) return false;
-    
+
     // Handle undefined or null name
     const mosqueName = m?.name || '';
     const matchesSearch = mosqueName?.toLowerCase()?.includes(search.toLowerCase());
@@ -30,13 +40,33 @@ const ListView: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Sort by distance if "Nearby" is selected and user location is available
+  if (sortByDistance && userLocation) {
+    filtered = [...filtered].sort((a, b) => {
+      const distA = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        a.location.lat,
+        a.location.lng
+      );
+      const distB = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        b.location.lat,
+        b.location.lng
+      );
+      return distA - distB;
+    });
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-8">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
         <p className="text-slate-500 text-sm mb-2">Connecting to database...</p>
         <p className="text-slate-400 text-xs text-center max-w-sm">
-          If this takes more than a few seconds, please check your internet connection or try refreshing the page.
+          If this takes more than a few seconds, please check your internet connection or try
+          refreshing the page.
         </p>
       </div>
     );
@@ -47,13 +77,19 @@ const ListView: React.FC = () => {
       <div className="flex flex-col h-full">
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
           <div className="flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-primary text-3xl font-bold">mosque</span>
-            <h1 className="text-xl font-bold tracking-tight">Mosque Explorer</h1>
+            <span className="material-symbols-outlined text-primary text-3xl font-bold">
+              restaurant
+            </span>
+            <h1 className="text-xl font-bold tracking-tight">Takjil Explorer</h1>
           </div>
         </header>
         <main className="flex-1 flex flex-col items-center justify-center px-8">
-          <span className="material-symbols-outlined text-6xl mb-4 opacity-20 text-slate-400">mosque</span>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">No mosques yet</p>
+          <span className="material-symbols-outlined text-6xl mb-4 opacity-20 text-slate-400">
+            mosque
+          </span>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+            No mosques yet
+          </p>
           <p className="text-xs text-slate-400 text-center max-w-xs">
             Be the first to add a mosque! Click the + button below to submit one.
           </p>
@@ -66,39 +102,83 @@ const ListView: React.FC = () => {
     <div className="flex flex-col h-full">
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
         <div className="flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-primary text-3xl font-bold">mosque</span>
-          <h1 className="text-xl font-bold tracking-tight">Mosque Explorer</h1>
+          <span className="material-symbols-outlined text-primary text-3xl font-bold">
+            restaurant
+          </span>
+          <h1 className="text-xl font-bold tracking-tight">Takjil Explorer</h1>
         </div>
-        
+
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-            <input 
-              type="text" 
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">
+              search
+            </span>
+            <input
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name..." 
+              placeholder="Search by name..."
               className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          <button 
+          <button
             onClick={() => setFilterVerified(!filterVerified)}
             className={`p-2.5 rounded-xl border transition-all ${filterVerified ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}
           >
             <span className="material-symbols-outlined text-xl">verified</span>
           </button>
         </div>
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+          <button
+            onClick={() => setSortByDistance(false)}
+            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              !sortByDistance
+                ? 'bg-primary text-white'
+                : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setSortByDistance(true)}
+            disabled={!userLocation}
+            className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              sortByDistance
+                ? 'bg-primary text-white'
+                : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+            } ${!userLocation ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Nearby
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 p-4 space-y-4">
         {filtered.map((mosque) => (
-          <div key={mosque.id} className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
+          <div
+            key={mosque.id}
+            className="bg-white dark:bg-white/5 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5"
+          >
+            <div className="relative bg-slate-200">
+              {userLocation && (
+                <div className="absolute top-2 right-2 px-2 py-1 bg-white/90 dark:bg-black/50 rounded-lg text-[10px] font-bold text-primary backdrop-blur-sm">
+                  {getDistanceText(
+                    userLocation.lat,
+                    userLocation.lng,
+                    mosque.location.lat,
+                    mosque.location.lng
+                  )}
+                </div>
+              )}
+            </div>
             <div className="p-4">
               <div className="flex justify-between items-start mb-1">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-base leading-tight">{mosque.name}</h3>
                   {mosque.status === MosqueStatus.VERIFIED && (
-                    <span className="material-symbols-outlined text-accent-gold text-lg fill-1">verified</span>
+                    <span className="material-symbols-outlined text-accent-gold text-lg fill-1">
+                      verified
+                    </span>
                   )}
                 </div>
               </div>
@@ -107,13 +187,16 @@ const ListView: React.FC = () => {
                 {mosque.address}
               </p>
               <div className="flex flex-wrap gap-1.5 mb-4">
-                {mosque.menu.map(item => (
-                  <span key={item} className="bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider">
+                {mosque.menu.map((item) => (
+                  <span
+                    key={item}
+                    className="bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider"
+                  >
                     {item}
                   </span>
                 ))}
               </div>
-              
+
               {/* Rating Section */}
               <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-white/5">
                 <button
@@ -142,7 +225,7 @@ const ListView: React.FC = () => {
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={() => navigate(`/mosque/${mosque.id}`)}
                 className="w-full bg-primary/5 text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
               >

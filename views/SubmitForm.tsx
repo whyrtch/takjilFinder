@@ -166,15 +166,15 @@ const SubmitForm: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-background-dark/80 ios-blur border-b border-slate-100 dark:border-white/5 px-4 pt-12 pb-4">
-        <h1 className="text-xl font-bold tracking-tight">Submit New Mosque</h1>
+        <h1 className="text-xl font-bold tracking-tight">Submit Takjil Location</h1>
         <p className="text-xs text-slate-400 mt-1">Help the community find iftar by sharing details.</p>
       </header>
 
-      <main className="p-4 flex-1">
+      <main className="p-4 pb-20 flex-1">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white dark:bg-white/5 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-white/5 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold block">Mosque Name</label>
+              <label className="text-sm font-bold block">Location Name</label>
               <input 
                 required
                 type="text" 
@@ -373,7 +373,7 @@ const SubmitForm: React.FC = () => {
               type="submit"
               className={`w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'shadow-primary/20'}`}
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Mosque'}
+              {isSubmitting ? 'Submitting...' : 'Submit'}
               {!isSubmitting && <span className="material-symbols-outlined text-xl">send</span>}
             </button>
             

@@ -5,6 +5,7 @@ import { MosqueStatus } from '../types';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { calculateDistance, formatDistance, getUserLocation } from '../utils/utils';
 
 // Custom marker icon
 const mosqueIcon = new L.DivIcon({
@@ -18,7 +19,7 @@ const mosqueIcon = new L.DivIcon({
     </div>
   `,
   iconSize: [40, 40],
-  iconAnchor: [20, 40]
+  iconAnchor: [20, 40],
 });
 
 const MosqueDetail: React.FC = () => {
@@ -27,23 +28,44 @@ const MosqueDetail: React.FC = () => {
   const { mosques, rateMosque, getUserRating } = useApp();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showCopied, setShowCopied] = useState(false);
+  const [distance, setDistance] = useState<string | null>(null);
 
-  const mosque = mosques.find(m => m.id === id);
+  const mosque = mosques.find((m) => m.id === id);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Calculate distance from user location
+  useEffect(() => {
+    if (mosque) {
+      getUserLocation()
+        .then((userLoc) => {
+          const dist = calculateDistance(
+            userLoc.lat,
+            userLoc.lng,
+            mosque.location.lat,
+            mosque.location.lng
+          );
+          setDistance(formatDistance(dist));
+        })
+        .catch((error) => {
+          console.log('Could not get user location:', error);
+          setDistance(null);
+        });
+    }
+  }, [mosque]);
+
   const handleShare = async () => {
     const url = window.location.href;
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
           title: mosque?.name || 'TakjilFinder',
           text: `Check out ${mosque?.name} on TakjilFinder`,
-          url: url
+          url: url,
         });
       } else {
         await navigator.clipboard.writeText(url);
@@ -71,7 +93,7 @@ const MosqueDetail: React.FC = () => {
         <span className="material-symbols-outlined text-slate-300 text-6xl mb-4">mosque</span>
         <h2 className="text-xl font-bold mb-2">Mosque Not Found</h2>
         <p className="text-slate-500 text-sm mb-6">The mosque you're looking for doesn't exist.</p>
-        <button 
+        <button
           onClick={() => navigate('/list')}
           className="bg-primary text-white px-6 py-3 rounded-xl font-bold"
         >
@@ -88,23 +110,21 @@ const MosqueDetail: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-background-dark">
       {/* Hero Section */}
       <div className="relative h-64 bg-primary">
-        <img 
-          src={mosque.image} 
-          alt={mosque.name}
-          className="w-full h-full object-cover"
-        />
+        <img src={mosque.image} alt={mosque.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
-        
+
         {/* Back Button */}
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="absolute top-6 left-4 bg-white/90 dark:bg-black/50 backdrop-blur-sm p-2 rounded-full shadow-lg"
         >
-          <span className="material-symbols-outlined text-slate-700 dark:text-white">arrow_back</span>
+          <span className="material-symbols-outlined text-slate-700 dark:text-white">
+            arrow_back
+          </span>
         </button>
 
         {/* Share Button */}
-        <button 
+        <button
           onClick={handleShare}
           className="absolute top-6 right-4 bg-white/90 dark:bg-black/50 backdrop-blur-sm p-2 rounded-full shadow-lg active:scale-90 transition-transform"
         >
@@ -125,7 +145,7 @@ const MosqueDetail: React.FC = () => {
               VERIFIED
             </span>
             <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-xs font-bold">
-              0.8 km away
+              {distance || 'Calculating...'}
             </span>
           </div>
           <h1 className="text-2xl font-extrabold mb-1 leading-tight">{mosque.name}</h1>
@@ -141,21 +161,27 @@ const MosqueDetail: React.FC = () => {
         <div className="bg-white dark:bg-white/5 rounded-2xl p-4 shadow-xl border border-slate-100 dark:border-white/5">
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Available Portions</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">
+                Available Portions
+              </p>
               <div className="flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-primary">restaurant</span>
                 {availablePortions === '0' || availablePortions === 0 ? (
                   <span className="text-2xl font-extrabold text-primary">∞</span>
                 ) : (
                   <>
-                    <span className="text-2xl font-extrabold text-primary">~{availablePortions}</span>
+                    <span className="text-2xl font-extrabold text-primary">
+                      ~{availablePortions}
+                    </span>
                     <span className="text-xs text-slate-400 font-bold">PACKS</span>
                   </>
                 )}
               </div>
             </div>
             <div className="text-center border-l border-slate-200 dark:border-white/10">
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">Iftar Time</p>
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1">
+                Iftar Time
+              </p>
               <div className="flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-accent-gold">schedule</span>
                 <span className="text-2xl font-extrabold">{iftarTime}</span>
@@ -227,9 +253,7 @@ const MosqueDetail: React.FC = () => {
             </button>
           </div>
           {getUserRating(mosque.id) && (
-            <p className="text-xs text-center text-slate-400 mt-3">
-              Thank you for your feedback!
-            </p>
+            <p className="text-xs text-center text-slate-400 mt-3">Thank you for your feedback!</p>
           )}
         </div>
 
@@ -239,7 +263,7 @@ const MosqueDetail: React.FC = () => {
             <span className="text-yellow-500">●</span>
             Location
           </h2>
-          
+
           <div className="relative rounded-xl overflow-hidden mb-4" style={{ height: '200px' }}>
             <MapContainer
               center={[mosque.location.lat, mosque.location.lng]}
@@ -250,7 +274,7 @@ const MosqueDetail: React.FC = () => {
               scrollWheelZoom={false}
             >
               <TileLayer
-                attribution=''
+                attribution=""
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
               />
               <Marker position={[mosque.location.lat, mosque.location.lng]} icon={mosqueIcon} />
@@ -280,7 +304,7 @@ const MosqueDetail: React.FC = () => {
 
       {/* Fixed Bottom Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-background-dark/80 ios-blur border-t border-slate-100 dark:border-white/5 max-w-md mx-auto z-50">
-        <button 
+        <button
           onClick={() => {
             const url = `https://www.google.com/maps/dir/?api=1&destination=${mosque.location.lat},${mosque.location.lng}`;
             window.open(url, '_blank');
